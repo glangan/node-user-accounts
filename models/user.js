@@ -29,6 +29,11 @@ User.beforeCreate(async function(user) {
   }
 });
 
+User.prototype.validatePassword = function(password) {
+  const match = bcrypt.compareSync(password, this.password);
+  return match;
+};
+
 sequelize
   .sync()
   .then(() =>

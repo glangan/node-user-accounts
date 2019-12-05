@@ -10,10 +10,17 @@ html
       header.my-4
         ul.nav.justify-content-end
           li.nav-item
-            a.nav-link(href='#') Home
-          li.nav-item
-            a.nav-link(href='/users/register') Register
-          li.nav-item
-            a.nav-link(href='#') Login
+            a.nav-link(href='/') Home
+          if user
+            li.nav-item
+              a.nav-link(href='/users/profile') Profile
+            li.nav-item
+              a.nav-link(href='/users/logout') Logout
+          else
+            li.nav-item
+              a.nav-link(href='/users/register') Register
+            li.nav-item
+              a.nav-link(href='/users/login') Login
+          
 
       block content
