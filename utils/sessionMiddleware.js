@@ -1,5 +1,3 @@
-const User = require('../models/user');
-
 const profileRedirect = (req, res, next) => {
   if (req.session.user) {
     res.redirect('/users/profile');

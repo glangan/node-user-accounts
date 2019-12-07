@@ -2,22 +2,40 @@ const Sequelize = require('sequelize');
 const bcrypt = require('bcrypt');
 const sequelize = require('./db/sequelize');
 
-const User = sequelize.define('users', {
-  username: {
-    type: Sequelize.STRING,
-    unique: true,
-    allowNull: false
+const Model = Sequelize.Model;
+
+class User extends Model {}
+
+User.init(
+  {
+    username: {
+      type: Sequelize.STRING,
+      unique: {
+        msg: 'Username already exists'
+      },
+      allowNull: false
+    },
+    email: {
+      type: Sequelize.STRING,
+      unique: {
+        msg: 'Email already exists'
+      },
+      allowNull: false
+    },
+    password: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    isVerified: {
+      type: Sequelize.BOOLEAN,
+      default: false
+    }
   },
-  email: {
-    type: Sequelize.STRING,
-    unique: true,
-    allowNull: false
-  },
-  password: {
-    type: Sequelize.STRING,
-    allowNull: false
+  {
+    sequelize,
+    modelName: 'user'
   }
-});
+);
 
 User.beforeCreate(async function(user) {
   const saltRounds = 8;

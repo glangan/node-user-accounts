@@ -4,8 +4,8 @@ block content
   .row
     .col-md-4
       h4 Please Register
-      if errorMessages
-        each msg in errorMessages
+      if messages
+        each msg in messages
           .alert.alert-danger #{msg}
       form(action="" method="post")
         .form-group
