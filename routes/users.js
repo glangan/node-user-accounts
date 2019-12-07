@@ -9,8 +9,12 @@ require('dotenv').config();
 const User = require('../models/user');
 const Token = require('../models/token');
 
-const userValidationRules = require('../utils/userValidation');
-const loginValidationRules = require('../utils/loginValidation');
+const {
+  registerValidation,
+  loginValidation,
+  resendValidation
+} = require('../utils/formValidation');
+
 const {
   loginRedirect,
   profileRedirect
@@ -23,6 +27,35 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD
   }
 });
+
+const createRandomToken = () => {
+  return (
+    Math.random()
+      .toString(36)
+      .substr(2) +
+    Math.random()
+      .toString(36)
+      .substr(2)
+  );
+};
+
+const sendToken = (res, email, token, template, message) => {
+  const data = {
+    from: process.env.EMAIL_USERNAME,
+    to: email,
+    subject: 'Email verification',
+    text: `Hello \n\n Please verify your account by clicking the following link: \n\n http://localhost:3000/users/register/verify/${token}`
+  };
+  transporter.sendMail(data, function(err) {
+    if (err) {
+      throw new Error('Failed to send verification email');
+    } else {
+      res.render(template, {
+        messages: [message]
+      });
+    }
+  });
+};
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -50,7 +83,7 @@ router.get('/register', profileRedirect, (req, res) => {
 
 router.post(
   '/register',
-  userValidationRules(),
+  registerValidation(),
   profileRedirect,
   async (req, res) => {
     try {
@@ -72,13 +105,7 @@ router.post(
           throw new Error('Failed to create user');
         }
 
-        const randomToken =
-          Math.random()
-            .toString(36)
-            .substr(2) +
-          Math.random()
-            .toString(36)
-            .substr(2);
+        const randomToken = createRandomToken();
 
         const token = await Token.create({
           token: randomToken,
@@ -90,21 +117,13 @@ router.post(
         }
 
         // send verificatio email
-        const data = {
-          from: process.env.EMAIL_USERNAME,
-          to: user.email,
-          subject: 'Email verification',
-          text: `Hello \n\n Please verify your account by clicking the following link: \n\n http://localhost:3000/users/register/verify/${token.token}`
-        };
-        transporter.sendMail(data, function(err) {
-          if (err) {
-            throw new Error('Failed to send verification email');
-          } else {
-            res.render('users/register', {
-              messages: ['Verification email sent']
-            });
-          }
-        });
+        sendToken(
+          res,
+          user.email,
+          token.token,
+          'users/register',
+          'Email verification sent'
+        );
       }
     } catch (error) {
       if (error instanceof Sequelize.ValidationError) {
@@ -153,13 +172,66 @@ router.get('/register/verify/:token', async function(req, res) {
   }
 });
 
+router.get('/register/resend', profileRedirect, function(req, res) {
+  res.render('users/resend');
+});
+
+router.post(
+  '/register/resend',
+  resendValidation(),
+  profileRedirect,
+  async function(req, res) {
+    try {
+      let messages = validationResult(req).array({
+        onlyFirstError: true
+      });
+      if (messages.length != 0) {
+        messages = messages.map(message => message.msg);
+        res.render('users/resend', { messages });
+      } else {
+        const user = await User.findOne({
+          where: { email: req.body.email }
+        });
+
+        if (!user) {
+          res.render('users/resend', { messages: ['Email not found'] });
+        } else if (user.isVerified) {
+          res.render('users/resend', { messages: ['User already verified'] });
+        } else {
+          const randomToken = createRandomToken();
+
+          const token = await Token.create({
+            token: randomToken,
+            userId: user.dataValues.id
+          });
+
+          if (!token) {
+            throw new Error('Failed to create token');
+          }
+
+          sendToken(
+            res,
+            user.email,
+            token.token,
+            'users/resend',
+            'Email verification sent'
+          );
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      res.redirect('/users/login');
+    }
+  }
+);
+
 // Authentication Routes
 
 router.get('/login', profileRedirect, function(req, res, next) {
   res.render('users/login');
 });
 
-router.post('/login', loginValidationRules(), profileRedirect, async function(
+router.post('/login', loginValidation(), profileRedirect, async function(
   req,
   res,
   next

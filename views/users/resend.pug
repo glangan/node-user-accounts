@@ -1,0 +1,14 @@
+extends ../layout
+
+block content
+  .row
+    .col-md-4
+      h4 Verify you account
+      if messages
+        each msg in messages
+          .alert.alert-danger #{msg}
+      form(action="" method="post")
+        .form-group
+          label(for="email") Email
+          input.form-control(type="email", id="email", name="email")
+        button.btn.btn-primary(type="submit") Submit

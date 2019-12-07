@@ -1,6 +1,28 @@
 const { check } = require('express-validator');
 
-const userValidationRules = () => {
+const resendValidation = () => {
+  return [
+    check('email')
+      .not()
+      .isEmpty()
+      .withMessage('Email is required')
+  ];
+};
+
+const loginValidation = () => {
+  return [
+    check('username')
+      .not()
+      .isEmpty()
+      .withMessage('Username is required'),
+    check('password')
+      .not()
+      .isEmpty()
+      .withMessage('Password is required')
+  ];
+};
+
+const registerValidation = () => {
   return [
     check('username')
       .not()
@@ -24,4 +46,4 @@ const userValidationRules = () => {
   ];
 };
 
-module.exports = userValidationRules;
+module.exports = { resendValidation, loginValidation, registerValidation };
